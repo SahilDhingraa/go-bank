@@ -14,4 +14,4 @@ test:
 	
 clean:
 	@echo "Cleaning the project..."
-	@rm -rf bin
+	@rm -rf bin tmp

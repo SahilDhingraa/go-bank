@@ -10,8 +10,8 @@ import (
 )
 
 func WriteJSON(w http.ResponseWriter, status int, val any) error {
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json ")
+	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(val)
 }
 
@@ -50,7 +50,7 @@ func (s *APIServer) Run() {
 	log.Println("JSON API SERVER RUNNING ON PORT ", s.listenAddress)
 
 	http.ListenAndServe(s.listenAddress, router)
-	http.NewServeMux()
+	// http.NewServeMux()
 }
 
 func (s *APIServer) HandleAccount(w http.ResponseWriter, r *http.Request) error {
@@ -69,7 +69,7 @@ func (s *APIServer) HandleAccount(w http.ResponseWriter, r *http.Request) error 
 
 func (s *APIServer) HandleGetAccount(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)["id"]
-	
+
 	// account := NewAccount("Sahil", "Dhingra")
 	return WriteJSON(w, http.StatusOK, vars)
 }
