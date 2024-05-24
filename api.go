@@ -9,35 +9,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, val any) error {
-	w.Header().Set("Content-Type", "application/json ")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(val)
-}
-
 type apiFunc func(http.ResponseWriter, *http.Request) error
-
+type APIServer struct {
+	listenAddress string
+	store         Storage
+}
 type APIError struct {
 	Error string
 }
 
-func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := f(w, r); err != nil {
-			WriteJSON(w, http.StatusBadRequest, APIError{Error: err.Error()})
-		}
-	}
-}
-
-type APIServer struct {
-	listenAddress string
-}
-
-func NewAPIServer(listenAddr string) *APIServer {
-	sim := &APIServer{
+func NewAPIServer(listenAddr string, store Storage) *APIServer {
+	return &APIServer{
 		listenAddress: listenAddr,
+		store:         store,
 	}
-	return sim
 }
 
 func (s *APIServer) Run() {
@@ -45,7 +30,7 @@ func (s *APIServer) Run() {
 
 	router.HandleFunc("/account", makeHTTPHandleFunc(s.HandleAccount))
 
-	router.HandleFunc("/account/{id}", makeHTTPHandleFunc(s.HandleGetAccount))
+	router.HandleFunc("/account/{id}", makeHTTPHandleFunc(s.HandleGetAccountByID))
 
 	log.Println("JSON API SERVER RUNNING ON PORT ", s.listenAddress)
 
@@ -68,6 +53,13 @@ func (s *APIServer) HandleAccount(w http.ResponseWriter, r *http.Request) error 
 }
 
 func (s *APIServer) HandleGetAccount(w http.ResponseWriter, r *http.Request) error {
+	accounts, err := s.store.GetAccounts()
+	if err != nil {
+		return err
+	}
+	return WriteJSON(w, http.StatusOK, accounts)
+}
+func (s *APIServer) HandleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)["id"]
 
 	// account := NewAccount("Sahil", "Dhingra")
@@ -75,7 +67,19 @@ func (s *APIServer) HandleGetAccount(w http.ResponseWriter, r *http.Request) err
 }
 
 func (s *APIServer) HandleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	createAccountReq := new(CreateAccountRequest)
+	// createAccountRequest := CreateAccountRequest{}
+	if err := json.NewDecoder(r.Body).Decode(createAccountReq); err != nil {
+		// if err := json.NewDecoder(r.Body).Decode(&createAccountRequest); err != nil {
+		return err
+	}
+
+	account := NewAccount(createAccountReq.FirstName, createAccountReq.LastName)
+	if err := s.store.CreateAccount(account); err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, account)
 }
 
 func (s *APIServer) HandleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
@@ -84,4 +88,18 @@ func (s *APIServer) HandleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 
 func (s *APIServer) HandleTransfer(w http.ResponseWriter, r *http.Request) error {
 	return nil
+}
+
+func WriteJSON(w http.ResponseWriter, status int, val any) error {
+	w.Header().Set("Content-Type", "application/json ")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(val)
+}
+
+func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := f(w, r); err != nil {
+			WriteJSON(w, http.StatusBadRequest, APIError{Error: err.Error()})
+		}
+	}
 }

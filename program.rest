@@ -1,0 +1,15 @@
+GET https://bk.pocketias.com/health
+
+###
+
+POST http://localhost:3000/account
+Content-Type: application/json
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwMjQwZjQwZjQwMzQwMjQwMzQwMjQwZiIsImlhdCI6MTYxNjIwNjQwM30.1
+
+{
+    "firstName":"Sahil",
+    "lastName":"Dhingra"
+}
+###
+
+GET http://localhost:3000/account
